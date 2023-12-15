@@ -232,12 +232,6 @@ CONTAINS
                          uu(:,:,:,Nrhs) = 0._wp            ! set dynamics trends to zero
                          vv(:,:,:,Nrhs) = 0._wp
 
-      ! RDP
-      IF( l_trddyn ) THEN
-                         CALL iom_put( 'hu', hu(:,:,Nnn) )
-                         CALL iom_put( 'hv', hv(:,:,Nnn) )
-      ENDIF
-
       IF( ln_tile ) CALL dom_tile_start         ! [tiling] DYN tiling loop (1)
       DO jtile = 1, nijtile
          IF( ln_tile ) CALL dom_tile( ntsi, ntsj, ntei, ntej, ktile = jtile )

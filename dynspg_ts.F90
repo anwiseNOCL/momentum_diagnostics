@@ -1032,8 +1032,8 @@ CONTAINS
          ENDIF
       ENDIF
       !
-      CALL iom_put( "baro_u" , puu_b(:,:,Kmm)*ssumask(:,:)+zmdi*(1.-ssumask(:,:) ) )  ! Barotropic  U Velocity
-      CALL iom_put( "baro_v" , pvv_b(:,:,Kmm)*ssvmask(:,:)+zmdi*(1.-ssvmask(:,:) ) )  ! Barotropic  V Velocity
+      CALL iom_put( "baro_u" , puu_b(:,:,Kmm)*ssumask(:,:)+zmdi*(1._wp-ssumask(:,:) ) )  ! Barotropic  U Velocity
+      CALL iom_put( "baro_v" , pvv_b(:,:,Kmm)*ssvmask(:,:)+zmdi*(1._wp-ssvmask(:,:) ) )  ! Barotropic  V Velocity
    END SUBROUTINE dyn_spg_ts
 
 

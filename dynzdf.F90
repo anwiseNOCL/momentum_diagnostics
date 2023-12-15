@@ -109,13 +109,6 @@ CONTAINS
       !                             !* explicit top/bottom drag case
       IF( .NOT.ln_drgimp )   CALL zdf_drg_exp( kt, Kmm, puu(:,:,:,Kbb), pvv(:,:,:,Kbb), puu(:,:,:,Krhs), pvv(:,:,:,Krhs) )  ! add top/bottom friction trend to (puu(Kaa),pvv(Kaa))
       !
-      !
-      IF( l_trddyn )   THEN         !* temporary save of ta and sa trends
-         ALLOCATE( ztrdu(jpi,jpj,jpk), ztrdv(jpi,jpj,jpk), ztrdu_fr(jpi,jpj,jpk), ztrdv_fr(jpi,jpj,jpk) ) 
-         ztrdu(:,:,:) = puu(:,:,:,Krhs)
-         ztrdv(:,:,:) = pvv(:,:,:,Krhs)
-      ENDIF
-      !
       !              !==  RHS: Leap-Frog time stepping on all trends but the vertical mixing  ==!   (put in puu(:,:,:,Kaa),pvv(:,:,:,Kaa))
       !
       !                    ! time stepping except vertical diffusion
@@ -134,6 +127,13 @@ CONTAINS
                &                        / e3v(ji,jj,jk,Kaa) * vmask(ji,jj,jk)
          END_3D
       ENDIF
+      !   
+      IF( l_trddyn )   THEN         !* temporary save of ta and sa trends
+         ALLOCATE( ztrdu(jpi,jpj,jpk), ztrdv(jpi,jpj,jpk), ztrdu_fr(jpi,jpj,jpk), ztrdv_fr(jpi,jpj,jpk) ) 
+         ztrdu(:,:,:) = puu(:,:,:,Krhs)
+         ztrdv(:,:,:) = pvv(:,:,:,Krhs)
+      ENDIF
+      ! 
       !                    ! add top/bottom friction 
       !     With split-explicit free surface, barotropic stress is treated explicitly Update velocities at the bottom.
       !     J. Chanut: The bottom stress is computed considering after barotropic velocities, which does 
