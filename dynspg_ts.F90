@@ -206,7 +206,11 @@ CONTAINS
       REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: zspgtrdu, zspgtrdv, zpvotrdu, zpvotrdv  ! SPG and PVO trends (if l_trddyn)
       REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: ztautrdu, ztautrdv, zbfrtrdu, zbfrtrdv  ! TAU and BFR trends (if l_trddyn)
       REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: ztfrtrdu, ztfrtrdv, ztottrdu, ztottrdv  ! TFR and TOT trends (if l_trddyn)
+!AW add in atmospheric pressure effect to mom trend output
+      REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: zatmtrdu, zatmtrdv  !ATM trends (if l_trddyn) 
+!AW end
       !!----------------------------------------------------------------------
+
       !
 !AW v421 update      IF( ln_wd_il ) ALLOCATE( zcpx(jpi,jpj), zcpy(jpi,jpj) )
       !                                         !* Allocate temporary arrays
@@ -216,6 +220,13 @@ CONTAINS
           ALLOCATE( zspgtrdu(jpi,jpj), zspgtrdv(jpi,jpj), zpvotrdu(jpi,jpj), zpvotrdv(jpi,jpj), &
          &          ztautrdu(jpi,jpj), ztautrdv(jpi,jpj), zbfrtrdu(jpi,jpj), zbfrtrdv(jpi,jpj), &
          &          ztottrdu(jpi,jpj), ztottrdv(jpi,jpj) )
+!AW add atm pressure to trends
+          IF( ln_apr_dyn ) THEN
+             ALLOCATE( zatmtrdu(jpi,jpj), zatmtrdv(jpi,jpj) )
+             zatmtrdu(:,:) = 0._wp
+             zatmtrdv(:,:) = 0._wp
+          ENDIF
+!AW end
           zspgtrdu(:,:) = 0._wp
           zspgtrdv(:,:) = 0._wp
           zpvotrdu(:,:) = 0._wp
@@ -323,6 +334,7 @@ CONTAINS
          CALL dyn_cor_2d( CASTSP(ht(:,:)), hu(:,:,Kmm), hv(:,:,Kmm), puu_b(:,:,Kmm), pvv_b(:,:,Kmm), zhU, zhV,  &   ! <<== in
             &                                                                          zu_trd, zv_trd   )   ! ==>> out
 !AW end
+
          IF( l_trddyn ) THEN
             ! send correction to baroclinic planetary vorticity trend to trd_dyn
             CALL trd_dyn( zu_trd, zv_trd, jpdyn_pvo_corr, kt, Kmm)
@@ -359,6 +371,11 @@ CONTAINS
       !                                   !=  Add atmospheric pressure forcing  =!
       !                                   !  ----------------------------------  !
       IF( ln_apr_dyn ) THEN
+!AW add atm to mom trends
+         ! initialise fields for atmospheric pressure trends
+         zatmtrdu(:,:) = zu_frc(:,:)
+         zatmtrdv(:,:) = zv_frc(:,:)
+!AW end
          IF( ln_bt_fw ) THEN                          ! FORWARD integration: use kt+1/2 pressure (NOW+1/2)
             DO_2D( 0, 0, 0, 0 )
                zu_frc(ji,jj) = zu_frc(ji,jj) + grav * (  ssh_ib (ji+1,jj  ) - ssh_ib (ji,jj) ) * r1_e1u(ji,jj)
@@ -373,6 +390,14 @@ CONTAINS
                     &                                   + ssh_ibb(ji  ,jj+1) - ssh_ibb(ji,jj)  ) * r1_e2v(ji,jj)
             END_2D
          ENDIF
+!AW add atm to mom trends
+      IF( l_trddyn ) THEN
+         ! atmospheric pressure trend diagnostic
+         zatmtrdu(:,:) = zu_frc(:,:) - zatmtrdu(:,:)
+         zatmtrdv(:,:) = zv_frc(:,:) - zatmtrdv(:,:)
+         CALL trd_dyn( zatmtrdu, zatmtrdv, jpdyn_atm, kt, Kmm)
+      ENDIF
+!AW end
       ENDIF
       !
       !                                   !=  Add wind forcing  =!
@@ -917,8 +942,8 @@ CONTAINS
             pvv(:,:,jk,Krhs) = pvv(:,:,jk,Krhs) + ( pvv_b(:,:,Kaa) - pvv_b(:,:,Kbb) ) * r1_Dt_b
          END DO
          IF( l_trddyn ) THEN
-            ztottrdu(:,:) = ( puu(:,:,Kaa) - puu(:,:,Kbb) ) * r1_Dt_b
-            ztottrdv(:,:) = ( pvv(:,:,Kaa) - pvv(:,:,Kbb) ) * r1_Dt_b
+            ztottrdu(:,:) = ( puu_b(:,:,Kaa) - puu_b(:,:,Kbb) ) * r1_Dt_b
+            ztottrdv(:,:) = ( pvv_b(:,:,Kaa) - pvv_b(:,:,Kbb) ) * r1_Dt_b
             CALL trd_dyn( ztottrdu, ztottrdv, jpdyn_tot, kt, Kmm)
          ENDIF
       ELSE
@@ -949,8 +974,8 @@ CONTAINS
          puu_b(:,:,Kaa) =  puu_b(:,:,Kaa) / ( hu_0(:,:) + zsshu_a(:,:) + 1._wp - ssumask(:,:) )
          pvv_b(:,:,Kaa) =  pvv_b(:,:,Kaa) / ( hv_0(:,:) + zsshv_a(:,:) + 1._wp - ssvmask(:,:) )
          IF( l_trddyn ) THEN
-            ztottrdu(:,:) = r1_hu(:,:,Kmm) * ( puu(:,:,Kaa) - puu(:,:,Kbb) * hu(:,:,Kbb) ) * r1_Dt_b
-            ztottrdv(:,:) = r1_hv(:,:,Kmm) * ( pvv(:,:,Kaa) - pvv(:,:,Kbb) * hv(:,:,Kbb) ) * r1_Dt_b
+            ztottrdu(:,:) = r1_hu(:,:,Kmm) * ( puu_b(:,:,Kaa) - puu_b(:,:,Kbb) * hu(:,:,Kbb) ) * r1_Dt_b
+            ztottrdv(:,:) = r1_hv(:,:,Kmm) * ( pvv_b(:,:,Kaa) - pvv_b(:,:,Kbb) * hv(:,:,Kbb) ) * r1_Dt_b
             CALL trd_dyn( ztottrdu, ztottrdv, jpdyn_tot, kt, Kmm)
          ENDIF
       ENDIF

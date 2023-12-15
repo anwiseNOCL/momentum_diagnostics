@@ -61,6 +61,9 @@ MODULE trddyn
    REAL(dp), ALLOCATABLE, DIMENSION(:,:)  , SAVE :: zutrd_tfr2d, zvtrd_tfr2d
    REAL(dp), ALLOCATABLE, DIMENSION(:,:)  , SAVE :: zutrd_bfr2d, zvtrd_bfr2d
 !AW end
+!AW add atmospheric pressure to mom trend
+   REAL(dp), ALLOCATABLE, DIMENSION(:,:)  , SAVE :: zutrd_atm2d, zvtrd_atm2d
+!AW end
 
    !! * Substitutions
 #  include "do_loop_substitute.h90"
@@ -363,12 +366,24 @@ CONTAINS
           !
           ! For split-explicit scheme SPG trends come here as 2D fields
           ! Add SPG trend to 3D HPG trend and also output as 2D diagnostic in own right.
-          DO jk = 1, jpkm1
-             zutrd_hpg(:,:,jk) = zutrd_hpg(:,:,jk) + putrd(:,:)
-             zvtrd_hpg(:,:,jk) = zvtrd_hpg(:,:,jk) + pvtrd(:,:)
-          ENDDO
+
+!AW add atmospheric pressure mom trend
+          IF( ALLOCATED(zutrd_atm2d) ) THEN
+             DO jk = 1, jpkm1
+                zutrd_hpg(:,:,jk) = zutrd_hpg(:,:,jk) + zutrd_atm2d(:,:) + putrd(:,:)
+                zvtrd_hpg(:,:,jk) = zvtrd_hpg(:,:,jk) + zvtrd_atm2d(:,:) + pvtrd(:,:)
+             ENDDO
+          ELSE
+!AW end
+             DO jk = 1, jpkm1
+                zutrd_hpg(:,:,jk) = zutrd_hpg(:,:,jk) + putrd(:,:)
+                zvtrd_hpg(:,:,jk) = zvtrd_hpg(:,:,jk) + pvtrd(:,:)
+             ENDDO
+          ENDIF
           CALL trd_dyn_3d( zutrd_hpg, zvtrd_hpg, jpdyn_hpg, kt, Kmm )
           DEALLOCATE( zutrd_hpg, zvtrd_hpg )
+!AW remove          
+          DEALLOCATE( zutrd_atm2d, zvtrd_atm2d ) 
 
       CASE( jpdyn_pvo )
           !
@@ -403,6 +418,14 @@ CONTAINS
           IF( .NOT. ALLOCATED(zutrd_tfr2d) ) ALLOCATE( zutrd_tfr2d(jpi,jpj), zvtrd_tfr2d(jpi,jpj) )
           zutrd_tfr2d(:,:) = putrd(:,:)
           zvtrd_tfr2d(:,:) = pvtrd(:,:)
+
+!AW add atmospheric pressure to mom trend
+      CASE( jpdyn_atm )
+          !
+          ! Save 2D atmospheric pressure effect on pressure
+          ALLOCATE( zutrd_atm2d(jpi,jpj), zvtrd_atm2d(jpi,jpj) )
+          zutrd_atm2d(:,:) = putrd(:,:)
+          zvtrd_atm2d(:,:) = pvtrd(:,:)          
 
       CASE( jpdyn_tau2d )
           !
@@ -558,6 +581,10 @@ CONTAINS
                                  CALL iom_put( "vtrd_spg2d", pvtrd )
       CASE( jpdyn_pvo )      ;   CALL iom_put( "utrd_pvo2d", putrd )      ! planetary vorticity (barotropic part)
                                  CALL iom_put( "vtrd_pvo2d", pvtrd )
+!AW add atmospheric pressure 
+      CASE( jpdyn_atm )      ;   CALL iom_put( "utrd_atm2d", putrd )      ! atmospheric pressure gradient trend
+                                 CALL iom_put( "vtrd_atm2d", pvtrd )
+!AW end
       CASE( jpdyn_frc2d )    ;   CALL iom_put( "utrd_frc2d", putrd )      ! constant forcing term from barotropic calcn.
                                  CALL iom_put( "vtrd_frc2d", pvtrd ) 
       CASE( jpdyn_tau )      ;   CALL iom_put( "utrd_tau", putrd )        ! surface wind stress trend

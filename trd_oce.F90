@@ -77,6 +77,9 @@ MODULE trd_oce
    INTEGER, PUBLIC, PARAMETER ::   jpdyn_tot   = 14     !: Total trend excluding Asselin time filter
    INTEGER, PUBLIC, PARAMETER ::   jpdyn_atf   = 15     !: Asselin time filter
    INTEGER, PUBLIC, PARAMETER ::   jpdyn_ken   = 16     !: use for calculation of KE
+!AW add atm pressure trend
+   INTEGER, PUBLIC, PARAMETER ::   jpdyn_atm   = 0     !: atmospheic pressure
+!AW end
    !                               ================     !: FLAGS BELOW FOR INTERNAL PROCESSING ONLY
    INTEGER, PUBLIC, PARAMETER ::   jpdyn_hpg_save = 17  !: hydrostatic pressure gradient (saved value)
    INTEGER, PUBLIC, PARAMETER ::   jpdyn_hpg_corr = 18  !: hydrostatic pressure gradient (initial correction)
